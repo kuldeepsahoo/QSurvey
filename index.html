@@ -91,23 +91,19 @@
       });
 
     
-
-    $scope.addPublishItem = function() {
+    $scope.publishItem = function() {
         $scope.errortext = "";
         if (!$scope.msg) {return;}
-        $scope.createMessageDetails($scope.msg);
+        $scope.addMessageDetails($scope.msg);
       }
 
 
 
-      $scope.createMessageDetails = function(msgf) {
+      $scope.addMessageDetails = function(msgf) {
         if(msgf.survey === true)
         {
-            
             msgf.yesCount = 0;
             msgf.noCount = 0;
-
-            
         }
         else
         {
@@ -117,86 +113,12 @@
       var newMsgKey = database.ref('messages').push().key;
       database.ref('messages/' + newMsgKey).set({message:msgf});
       return newMsgKey;
-
       }
-
-    
 
       $scope.removeItem = function (x) {
         $scope.errortext = "";
         $scope.products.splice(x, 1);
       }
-
-
-/*$scope.isItSurvey=function(msg){
-
-  if(msg.survey == true)
-      {
-
-        $scope.ifSurvey = true ;
-        $scope.ifNotSurvey = false;
-      }
-
-  else 
-      {
-       $scope.ifSurvey = false ;
-       $scope.ifNotSurvey = true ;
-      }
-
-}
-
-  
-
-  $scope.countYes = 0 ;
-
-  $scope.yesCount=function(){
-
-            $scope.countYes++;
-          }
-
-
-          $scope.countNo = 0 ;
-   $scope.noCount=function(){
-
-            $scope.countNo= countNo +1;
-          }
-
-  */
-
-
-
-
-
-/*
-
-  $scope.createAPost = function(channelKey, message, title, itsAsurvey) {
-
-      var data = {};
-      if(itsAsurvey)
-      {
-        data = {
-              type:"survey",
-              body: message,
-              title: title,
-              Yes: 0,
-              No: 01
-            };
-      }
-      else
-      {
-        data = {
-              type:"normal",
-              body: message,
-              title: title
-            };
-      }
-
-    var newSurveyKey = database.ref('channels/' + channelKey + '/messages').push().key;
-      database.ref('messages/' + newPostKey).set(data);
-  }
-
-*/
-
 
 });
 
@@ -256,7 +178,7 @@
                       <label class="w3-validate">It is a survey</label>
                     </div>
                     <div class="w3-col s2">
-                      <button ng-click="addPublishItem()" class="w3-btn  w3-green">PUBLISH</button>
+                      <button ng-click="publishItem()" class="w3-btn  w3-green">PUBLISH</button>
                     </div>
                   </div>
                 </div>
