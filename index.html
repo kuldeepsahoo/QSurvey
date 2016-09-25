@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+<html>
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.3.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.3.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.3.2/firebase-database.js"></script>
+
+<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+<body>
+
+<script>
+
+  // Set the configuration for your app
+  // TODO: Replace with your project's config object
+   // Initialize Firebase
+  /*var config = {
+    apiKey: "AIzaSyB_Rcg-PBIz4HazlNEWiBQiW4K7BV4mDPM",
+    authDomain: "quickdemo-b4cc9.firebaseapp.com",
+    databaseURL: "https://quickdemo-b4cc9.firebaseio.com",
+    storageBucket: "quickdemo-b4cc9.appspot.com",
+  };*/
+  
+  var config = {
+    apiKey: "AIzaSyCM4XZnac2L8m-26Olc9tI7_FD11zobHSY",
+    authDomain: "qsurvey-1dacd.firebaseapp.com",
+    databaseURL: "https://qsurvey-1dacd.firebaseio.com",
+    storageBucket: "",
+    messagingSenderId: "130814273722"
+  };
+
+
+  firebase.initializeApp(config);
+
+// Get a reference to the database service
+  var database = firebase.database();
+
+
+  var app = angular.module("quick_demo", []);
+
+  app.controller("myCtrl", function($scope) {
+
+  $scope.products = [];
+
+  $scope.messageArray = [];
+
+  var channelsRef = database.ref("/channels");
+
+  var messageRef = database.ref("/messages");
+
+
+  channelsRef.orderByChild("channel").on("child_added", function(snapshot) {
+        console.log("The " + snapshot.key + " channel is " + snapshot.val().channel);
+        $scope.products.push(snapshot.val().channel);
+    });
+
+
+
+    $scope.addItem = function () {
+        $scope.errortext = "";
+        if (!$scope.addMe) {return;}
+        if ($scope.products.indexOf($scope.addMe) == -1) {
+            //$scope.products.push($scope.addMe);
+            $scope.createAChannel($scope.addMe);
+        } else {
+            $scope.errortext = "The channel is already in the list.";
+        }
+    }
+
+
+    $scope.createAChannel = function(channelName) {
+    var newKey = database.ref('channels').push().key;
+      database.ref('channels/' + newKey).set({channel:channelName});
+      return newKey;
+    }
+
+
+    $scope.showAddItem = function(x) {
+
+          $scope.selected_channel = x;
+
+    }
+
+
+
+//Show clicked item on "Publish message on" 
+
+      messageRef.orderByChild("message").on("child_added", function(snapshot) {
+        console.log("The " + snapshot.key + " publishMessage is " + snapshot.val().message);
+        $scope.messageArray.push(snapshot.val().message);
+      });
+
+    
+
+    $scope.addPublishItem = function() {
+        $scope.errortext = "";
+        if (!$scope.msg) {return;}
+        $scope.createMessageDetails($scope.msg);
+      }
+
+
+
+      $scope.createMessageDetails = function(msgf) {
+        if(msgf.survey === true)
+        {
+            
+            msgf.yesCount = 0;
+            msgf.noCount = 0;
+
+            
+        }
+        else
+        {
+            msgf.survey = false;
+        }
+
+      var newMsgKey = database.ref('messages').push().key;
+      database.ref('messages/' + newMsgKey).set({message:msgf});
+      return newMsgKey;
+
+      }
+
+    
+
+      $scope.removeItem = function (x) {
+        $scope.errortext = "";
+        $scope.products.splice(x, 1);
+      }
+
+
+/*$scope.isItSurvey=function(msg){
+
+  if(msg.survey == true)
+      {
+
+        $scope.ifSurvey = true ;
+        $scope.ifNotSurvey = false;
+      }
+
+  else 
+      {
+       $scope.ifSurvey = false ;
+       $scope.ifNotSurvey = true ;
+      }
+
+}
+
+  
+
+  $scope.countYes = 0 ;
+
+  $scope.yesCount=function(){
+
+            $scope.countYes++;
+          }
+
+
+          $scope.countNo = 0 ;
+   $scope.noCount=function(){
+
+            $scope.countNo= countNo +1;
+          }
+
+  */
+
+
+
+
+
+/*
+
+  $scope.createAPost = function(channelKey, message, title, itsAsurvey) {
+
+      var data = {};
+      if(itsAsurvey)
+      {
+        data = {
+              type:"survey",
+              body: message,
+              title: title,
+              Yes: 0,
+              No: 01
+            };
+      }
+      else
+      {
+        data = {
+              type:"normal",
+              body: message,
+              title: title
+            };
+      }
+
+    var newSurveyKey = database.ref('channels/' + channelKey + '/messages').push().key;
+      database.ref('messages/' + newPostKey).set(data);
+  }
+
+*/
+
+
+});
+
+
+
+</script>
+
+<div ng-app="quick_demo" ng-cloak ng-controller="myCtrl" class="">
+
+  
+  <div class="w3-row">
+    <div class="w3-col m4 l3 w3-margin">
+      <div class="w3-card-2">
+          <header class="w3-container w3-light-grey w3-padding-16">
+            <h3>JPConnect Channels</h3>
+          </header>
+          <div class="w3-container w3-light-grey w3-padding-16">
+            <div class="w3-row w3-margin-top">
+              <div class="w3-col s10">
+                <input placeholder="Add new channels here" ng-model="addMe" class="w3-input w3-border w3-padding">
+              </div>
+              <div class="w3-col s2">
+                <button ng-click="addItem()" class="w3-btn w3-padding w3-green">Add</button>
+              </div>
+            </div>
+            <p class="w3-padding-left w3-text-red">{{errortext}}</p>
+          </div>
+
+          <ul class="w3-ul">
+            <li ng-repeat="x in products" ng-click="showAddItem(x)" style="cursor:pointer;" class="w3-padding-16">{{x}}<span ng-click="removeItem($index)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
+          </ul>
+
+        </div>
+    </div>
+    <div class="w3-col m7 l8 w3-margin">
+      <div class="w3-row">
+          <div class="w3-card-2">
+
+            <header class="w3-container w3-light-grey w3-padding-16">
+              <h3>Publish message on {{selected_channel}}</h3>
+            </header>
+
+              <form class="w3-container">
+
+                <input class="w3-input" type="text" ng-model="msg.title" required>
+                <label class="w3-label w3-validate">Message title</label>
+
+                <textarea class="w3-input" type="text" ng-model="msg.body" rows="4" required></textarea>
+                <label class="w3-label w3-validate">Message body</label>
+
+              </form>
+
+              <div class="w3-container w3-light-grey w3-padding-16">
+                  <div class="w3-row w3-margin-top">
+                    <div class="w3-col s10">
+                      <input class="w3-check" type="checkbox" ng-model="msg.survey" checked="checked" >
+                      <label class="w3-validate">It is a survey</label>
+                    </div>
+                    <div class="w3-col s2">
+                      <button ng-click="addPublishItem()" class="w3-btn  w3-green">PUBLISH</button>
+                    </div>
+                  </div>
+                </div>
+
+          </div>
+        </div>
+
+        <div class="w3-row">
+          <div class="w3-card-2">
+
+            <div class="w3-panel w3-pale-yellow w3-leftbar w3-border-yellow" >
+            <h4>Survey on {{message_title}}</h4>
+            <p> {{message_body}} </p>
+            <div class="w3-row">
+              <div class="w3-col s5">
+                <h1>Yes&nbsp;<span class="w3-tag w3-btn w3-green" ng-click="yesCount()" >{{countYes}}</span></h1>
+              </div>
+              <div class="w3-col s5">
+                <h1>No&nbsp;<span class="w3-tag w3-btn w3-red" ng-click="NoCount()">41</span></h1>
+              </div>
+            </div>
+            </div>
+
+            <div ng-repeat=" m in messageArray.slice().reverse()" class="w3-panel w3-pale-green w3-leftbar w3-border-green">
+            <h4>Information of {{selected_channel}} on {{m.title}} </h4>
+            <p>  {{m.body}}  </p>
+            </div>
+
+          </div>
+        </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
