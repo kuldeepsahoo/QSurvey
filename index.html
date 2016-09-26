@@ -34,21 +34,15 @@
 
 // Get a reference to the database service
   var database = firebase.database();
-
-
   var app = angular.module("quick_demo", []);
+  var  messageURI = null;
+  var messageRef = null;
 
-  app.controller("myCtrl", function($scope) {
+app.controller("channelCtrl", function($scope, $rootScope) {
 
   $scope.channels = [];
   $scope.channel_keys = [];
-
-  $scope.messageArray = [];
-
   var channelsRef = database.ref("/channels");
-
-  var messageRef = null;
-
 
   channelsRef.orderByChild("channel").on("child_added", function(snapshot) {
         console.log("The " + snapshot.key + " channel is " + snapshot.val().channel);
@@ -56,9 +50,7 @@
         $scope.channel_keys.push(snapshot.key);
     });
 
-
-
-    $scope.addItem = function () {
+    $scope.addChannel = function () {
         $scope.errortext = "";
         if (!$scope.addMe) {return;}
         if ($scope.channels.indexOf($scope.addMe) == -1) {
@@ -68,20 +60,18 @@
         }
     }
 
-
     $scope.createAChannel = function(channelName) {
-    var newKey = database.ref('channels').push().key;
+      var newKey = database.ref('channels').push().key;
       database.ref('channels/' + newKey).set({channel:channelName});
-      return newKey;
-    }
+    return newKey;
+  }
 
-
-    $scope.selectChannel = function(x) {
-          $scope.selected_channel = x;
+  $scope.selectChannel = function(x) {
+          $rootScope.selected_channel = x;
           var index = $scope.channels.indexOf(x);
           $scope.selected_channel_key = $scope.channel_keys[index];
 
-          var  messageURI = "channels/" + $scope.selected_channel_key + "/messages";
+          messageURI = "channels/" + $scope.selected_channel_key + "/messages";
           messageRef = database.ref(messageURI);
 
           //Show clicked item on "Publish message on" 
@@ -91,10 +81,21 @@
         console.log("The " + snapshot.key + " publishMessage is " + snapshot.val().message);
         $scope.messageArray.push(snapshot.val().message);
       });
+
     }
 
-    
-    $scope.publishItem = function() {
+      $scope.removeChannel = function (x) {
+        $scope.errortext = "";
+        $scope.channels.splice(x, 1);
+      }
+
+});
+
+app.controller("messageCtrl", function($scope, $rootScope) {
+
+      $scope.messageArray = [];
+
+      $scope.publishMessage = function() {
         $scope.errortext = "";
         if (!$scope.msg) {return;}
         $scope.addMessageDetails($scope.msg);
@@ -118,22 +119,14 @@
       return newMsgKey;
       }
 
-      $scope.removeItem = function (x) {
-        $scope.errortext = "";
-        $scope.channels.splice(x, 1);
-      }
-
-});
-
-
+  });
 
 </script>
 
-<div ng-app="quick_demo" ng-cloak ng-controller="myCtrl" class="">
+<div ng-app="quick_demo" ng-cloak class="">
 
-  
   <div class="w3-row">
-    <div class="w3-col m4 l3 w3-margin">
+    <div class="w3-col m4 l3 w3-margin" ng-controller="channelCtrl">
       <div class="w3-card-2">
           <header class="w3-container w3-light-grey w3-padding-16">
             <h3>JPConnect Channels</h3>
@@ -144,19 +137,19 @@
                 <input placeholder="Add new channels here" ng-model="addMe" class="w3-input w3-border w3-padding">
               </div>
               <div class="w3-col s2">
-                <button ng-click="addItem()" class="w3-btn w3-padding w3-green">Add</button>
+                <button ng-click="addChannel()" class="w3-btn w3-padding w3-green">Add</button>
               </div>
             </div>
             <p class="w3-padding-left w3-text-red">{{errortext}}</p>
           </div>
 
           <ul class="w3-ul">
-            <li ng-repeat="x in channels" ng-click="selectChannel(x)" style="cursor:pointer;" class="w3-padding-16">{{x}}<span ng-click="removeItem($index)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
+            <li ng-repeat="x in channels" ng-click="selectChannel(x)" style="cursor:pointer;" class="w3-padding-16">{{x}}<span ng-click="removeChannel($index)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
           </ul>
 
         </div>
     </div>
-    <div class="w3-col m7 l8 w3-margin">
+    <div class="w3-col m7 l8 w3-margin" ng-controller="messageCtrl">
       <div class="w3-row">
           <div class="w3-card-2">
 
@@ -181,7 +174,7 @@
                       <label class="w3-validate">It is a survey</label>
                     </div>
                     <div class="w3-col s2">
-                      <button ng-click="publishItem()" class="w3-btn  w3-green">PUBLISH</button>
+                      <button ng-click="publishMessage()" class="w3-btn  w3-green">PUBLISH</button>
                     </div>
                   </div>
                 </div>
