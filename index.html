@@ -75,11 +75,11 @@ app.controller("channelCtrl", function($scope, $rootScope) {
           messageRef = database.ref(messageURI);
 
           //Show clicked item on "Publish message on" 
-          $scope.messageArray = [];
+          $rootScope.messageArray = [];
 
       messageRef.orderByChild("message").on("child_added", function(snapshot) {
         console.log("The " + snapshot.key + " publishMessage is " + snapshot.val().message);
-        $scope.messageArray.push(snapshot.val().message);
+        $rootScope.messageArray.push(snapshot.val().message);
       });
 
     }
@@ -92,8 +92,6 @@ app.controller("channelCtrl", function($scope, $rootScope) {
 });
 
 app.controller("messageCtrl", function($scope, $rootScope) {
-
-      $scope.messageArray = [];
 
       $scope.publishMessage = function() {
         $scope.errortext = "";
@@ -198,7 +196,7 @@ app.controller("messageCtrl", function($scope, $rootScope) {
             </div>
             </div>
 
-            <div ng-repeat=" m in messageArray.slice().reverse()" class="w3-panel w3-pale-green w3-leftbar w3-border-green">
+            <div ng-repeat="m in messageArray.slice().reverse()" class="w3-panel w3-pale-green w3-leftbar w3-border-green">
             <h4>Information of {{selected_channel}} on {{m.title}} </h4>
             <p>  {{m.body}}  </p>
             </div>
