@@ -34,11 +34,13 @@
 
 // Get a reference to the database service
   var database = firebase.database();
+
   var app = angular.module("quick_demo", []);
   var  messageURI = null;
   var messageRef = null;
 
 app.controller("channelCtrl", function($scope, $rootScope) {
+
 
   $scope.channels = [];
   $scope.channel_keys = [];
@@ -50,7 +52,7 @@ app.controller("channelCtrl", function($scope, $rootScope) {
         $scope.channel_keys.push(snapshot.key);
     });
 
-    $scope.addChannel = function () {
+    $scope.addChannel = function(){
         $scope.errortext = "";
         if (!$scope.addMe) {return;}
         if ($scope.channels.indexOf($scope.addMe) == -1) {
@@ -58,6 +60,7 @@ app.controller("channelCtrl", function($scope, $rootScope) {
         } else {
             $scope.errortext = "The channel is already in the list.";
         }
+
     }
 
     $scope.createAChannel = function(channelName) {
@@ -76,29 +79,44 @@ app.controller("channelCtrl", function($scope, $rootScope) {
 
           //Show clicked item on "Publish message on" 
           $rootScope.messageArray = [];
+          $rootScope.message_keys = [];
 
       messageRef.orderByChild("message").on("child_added", function(snapshot) {
         console.log("The " + snapshot.key + " publishMessage is " + snapshot.val().message);
         $rootScope.messageArray.push(snapshot.val().message);
+      $rootScope.message_keys.push(snapshot.key);
       });
 
     }
 
+
       $scope.removeChannel = function (x) {
         $scope.errortext = "";
-        $scope.channels.splice(x, 1);
+
+     //   $scope.channels.splice(x,1);
+
+        var index = $scope.channels.indexOf(x)
+        var removeKey = $scope.channel_keys[index];
+
+        database.ref('channels/' + removeKey).set(null);
+
+        //TODO delete from DB
       }
 
-});
+  });
+
+
+
 
 app.controller("messageCtrl", function($scope, $rootScope) {
+
+       // var newMsgKey = null;      
 
       $scope.publishMessage = function() {
         $scope.errortext = "";
         if (!$scope.msg) {return;}
         $scope.addMessageDetails($scope.msg);
       }
-
 
 
       $scope.addMessageDetails = function(msgf) {
@@ -112,10 +130,31 @@ app.controller("messageCtrl", function($scope, $rootScope) {
             msgf.survey = false;
         }
 
-      var newMsgKey = messageRef.push().key;
+       
+
+       var newMsgKey = messageRef.push().key;
       database.ref( messageURI + '/' + newMsgKey).set({message:msgf});
       return newMsgKey;
       }
+
+
+      $scope.addYesCount = function(y){
+            var index = $scope.messageArray.indexOf(y);
+            y.yCnt = $scope.messageArray[index].yesCount;
+            y.yCnt = y.yCnt + 1;
+           // alert(y.yesCnt);
+            var messageKeyIndex = $scope.message_keys[index];
+            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({yesCount:y.yCnt});
+          }
+
+       $scope.addNoCount = function(n){
+            var index = $scope.messageArray.indexOf(n);
+            n.nCnt = $scope.messageArray[index].noCount;
+            n.nCnt = n.nCnt + 1;
+           // alert(y.yesCnt);
+            var messageKeyIndex = $scope.message_keys[index];
+            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({noCount:n.nCnt});
+          }
 
   });
 
@@ -134,15 +173,15 @@ app.controller("messageCtrl", function($scope, $rootScope) {
               <div class="w3-col s10">
                 <input placeholder="Add new channels here" ng-model="addMe" class="w3-input w3-border w3-padding">
               </div>
-              <div class="w3-col s2">
+              <div class="w3-col s2" ng-style="{background:'red'}">
                 <button ng-click="addChannel()" class="w3-btn w3-padding w3-green">Add</button>
               </div>
             </div>
             <p class="w3-padding-left w3-text-red">{{errortext}}</p>
           </div>
 
-          <ul class="w3-ul">
-            <li ng-repeat="x in channels" ng-click="selectChannel(x)" style="cursor:pointer;" class="w3-padding-16">{{x}}<span ng-click="removeChannel($index)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
+          <ul class="w3-ul" >
+            <li ng-repeat="x in channels" ng-click="selectChannel(x)" style="cursor:pointer;" class="w3-padding-16">{{x}}<span ng-click="removeChannel(x)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
           </ul>
 
         </div>
@@ -156,13 +195,11 @@ app.controller("messageCtrl", function($scope, $rootScope) {
             </header>
 
               <form class="w3-container">
-
                 <input class="w3-input" type="text" ng-model="msg.title" required>
                 <label class="w3-label w3-validate">Message title</label>
 
                 <textarea class="w3-input" type="text" ng-model="msg.body" rows="4" required></textarea>
                 <label class="w3-label w3-validate">Message body</label>
-
               </form>
 
               <div class="w3-container w3-light-grey w3-padding-16">
@@ -172,7 +209,7 @@ app.controller("messageCtrl", function($scope, $rootScope) {
                       <label class="w3-validate">It is a survey</label>
                     </div>
                     <div class="w3-col s2">
-                      <button ng-click="publishMessage()" class="w3-btn  w3-green">PUBLISH</button>
+                      <button ng-click="publishMessage()" class="w3-btn w3-green">PUBLISH</button>
                     </div>
                   </div>
                 </div>
@@ -183,22 +220,31 @@ app.controller("messageCtrl", function($scope, $rootScope) {
         <div class="w3-row">
           <div class="w3-card-2">
 
-            <div class="w3-panel w3-pale-yellow w3-leftbar w3-border-yellow" >
-            <h4>Survey on {{message_title}}</h4>
-            <p> {{message_body}} </p>
-            <div class="w3-row">
-              <div class="w3-col s5">
-                <h1>Yes&nbsp;<span class="w3-tag w3-btn w3-green" ng-click="yesCount()" >{{countYes}}</span></h1>
-              </div>
-              <div class="w3-col s5">
-                <h1>No&nbsp;<span class="w3-tag w3-btn w3-red" ng-click="NoCount()">41</span></h1>
-              </div>
-            </div>
-            </div>
+            <div ng-repeat="m in messageArray.slice().reverse()">
+                
 
-            <div ng-repeat="m in messageArray.slice().reverse()" class="w3-panel w3-pale-green w3-leftbar w3-border-green">
-            <h4>Information of {{selected_channel}} on {{m.title}} </h4>
-            <p>  {{m.body}}  </p>
+                     <div ng-if="m.survey==true" class="w3-panel w3-pale-yellow w3-leftbar w3-border-yellow" >
+
+                            <h4>Survey of {{selected_channel}} on {{m.title}}</h4>
+                            <p> {{m.body}} </p>
+
+                           <div class="w3-row">
+                                <div class="w3-col s5">
+                                  <h1>Yes&nbsp;<span class="w3-tag w3-btn w3-green" ng-click="addYesCount(m)" >{{m.yesCount}}</span></h1>
+                                </div>
+                                <div class="w3-col s5">
+                                  <h1>No&nbsp;<span class="w3-tag w3-btn w3-red" ng-click="addNoCount(m)" >{{m.noCount}}</span></h1>
+                                </div>
+                           </div>
+                     </div>
+                  
+                
+
+                <div  ng-if="m.survey==false" class="w3-panel w3-pale-green w3-leftbar w3-border-green">
+                  <h4>Information of {{selected_channel}} on {{m.title}} </h4>
+                  <p>  {{m.body}}  </p>
+
+                </div>
             </div>
 
           </div>
@@ -211,3 +257,4 @@ app.controller("messageCtrl", function($scope, $rootScope) {
 
 </body>
 </html>
+
