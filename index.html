@@ -88,18 +88,11 @@ app.controller("channelCtrl", function($scope, $rootScope) {
       $rootScope.message_keys.push(snapshot.key);
       });
 
-         $scope.selectedRow = index;
+         $scope.selectedRow = index; // This is for changing color on select a channel
 
     }
 
-   /* $scope.change=function(){
-
-      $scope.cl = "x"; 
-    }*/
-
-
-
-
+   
       $scope.removeChannel = function (x) {
         $scope.errortext = "";
 
