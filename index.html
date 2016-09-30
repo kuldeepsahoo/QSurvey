@@ -57,6 +57,7 @@ app.controller("channelCtrl", function($scope, $rootScope) {
         if (!$scope.addMe) {return;}
         if ($scope.channels.indexOf($scope.addMe) == -1) {
             $scope.createAChannel($scope.addMe);
+            alert( "The channel '" + $scope.addMe + "' Created");
         } else {
             $scope.errortext = "The channel is already in the list.";
         }
@@ -67,6 +68,7 @@ app.controller("channelCtrl", function($scope, $rootScope) {
       var newKey = database.ref('channels').push().key;
       database.ref('channels/' + newKey).set({channel:channelName});
     return newKey;
+
   }
 
   $scope.selectChannel = function(x) {
@@ -76,7 +78,6 @@ app.controller("channelCtrl", function($scope, $rootScope) {
 
           messageURI = "channels/" + $scope.selected_channel_key + "/messages";
           messageRef = database.ref(messageURI);
-
           //Show clicked item on "Publish message on" 
           $rootScope.messageArray = [];
           $rootScope.message_keys = [];
@@ -87,20 +88,28 @@ app.controller("channelCtrl", function($scope, $rootScope) {
       $rootScope.message_keys.push(snapshot.key);
       });
 
+         $scope.selectedRow = index;
+
     }
+
+   /* $scope.change=function(){
+
+      $scope.cl = "x"; 
+    }*/
+
+
 
 
       $scope.removeChannel = function (x) {
         $scope.errortext = "";
 
-     //   $scope.channels.splice(x,1);
+       // $scope.channels.splice(x,1);
 
         var index = $scope.channels.indexOf(x)
         var removeKey = $scope.channel_keys[index];
-
         database.ref('channels/' + removeKey).set(null);
+        $scope.channels[index] = "";        
 
-        //TODO delete from DB
       }
 
   });
@@ -109,8 +118,6 @@ app.controller("channelCtrl", function($scope, $rootScope) {
 
 
 app.controller("messageCtrl", function($scope, $rootScope) {
-
-       // var newMsgKey = null;      
 
       $scope.publishMessage = function() {
         $scope.errortext = "";
@@ -129,8 +136,6 @@ app.controller("messageCtrl", function($scope, $rootScope) {
         {
             msgf.survey = false;
         }
-
-       
 
        var newMsgKey = messageRef.push().key;
       database.ref( messageURI + '/' + newMsgKey).set({message:msgf});
@@ -151,7 +156,6 @@ app.controller("messageCtrl", function($scope, $rootScope) {
             var index = $scope.messageArray.indexOf(n);
             n.nCnt = $scope.messageArray[index].noCount;
             n.nCnt = n.nCnt + 1;
-           // alert(y.yesCnt);
             var messageKeyIndex = $scope.message_keys[index];
             database.ref( messageURI + '/' + messageKeyIndex + '/message').update({noCount:n.nCnt});
           }
@@ -159,6 +163,13 @@ app.controller("messageCtrl", function($scope, $rootScope) {
   });
 
 </script>
+
+<style type="text/css">
+.selected {
+  background-color: #ABEBC6; 
+}
+
+</style>
 
 <div ng-app="quick_demo" ng-cloak class="">
 
@@ -181,7 +192,7 @@ app.controller("messageCtrl", function($scope, $rootScope) {
           </div>
 
           <ul class="w3-ul" >
-            <li ng-repeat="x in channels" ng-click="selectChannel(x)" style="cursor:pointer;" class="w3-padding-16">{{x}}<span ng-click="removeChannel(x)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
+          <li ng-repeat="x in channels" ng-click="selectChannel(x)" style="cursor:pointer;" class="w3-padding-16" ng-class="{'selected': $index == selectedRow }">{{x}}<span ng-click="removeChannel(x)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
           </ul>
 
         </div>
@@ -245,6 +256,8 @@ app.controller("messageCtrl", function($scope, $rootScope) {
                   <p>  {{m.body}}  </p>
 
                 </div>
+
+
             </div>
 
           </div>
