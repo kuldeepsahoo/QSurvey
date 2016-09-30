@@ -109,7 +109,6 @@ app.controller("channelCtrl", function($scope, $rootScope) {
 
 
 
-
 app.controller("messageCtrl", function($scope, $rootScope) {
 
       $scope.publishMessage = function() {
@@ -138,19 +137,22 @@ app.controller("messageCtrl", function($scope, $rootScope) {
 
       $scope.addYesCount = function(y){
             var index = $scope.messageArray.indexOf(y);
-            y.yCnt = $scope.messageArray[index].yesCount;
-            y.yCnt = y.yCnt + 1;
-           // alert(y.yesCnt);
+            yCnt = $scope.messageArray[index].yesCount;
+            yCnt = yCnt + 1;
+           
             var messageKeyIndex = $scope.message_keys[index];
-            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({yesCount:y.yCnt});
+            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({yesCount:yCnt});
+
+            
           }
 
        $scope.addNoCount = function(n){
             var index = $scope.messageArray.indexOf(n);
-            n.nCnt = $scope.messageArray[index].noCount;
-            n.nCnt = n.nCnt + 1;
+            nCnt = $scope.messageArray[index].noCount;
+            nCnt = nCnt + 1;
+            
             var messageKeyIndex = $scope.message_keys[index];
-            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({noCount:n.nCnt});
+            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({noCount:nCnt});
           }
 
   });
