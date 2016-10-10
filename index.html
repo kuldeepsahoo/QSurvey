@@ -1,26 +1,18 @@
-
 <!DOCTYPE html>
 <html>
-<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/3.3.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/3.3.2/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/3.3.2/firebase-database.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-database.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 
-<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+<link rel="stylesheet" href="css/w3.css">
 <body>
 
 <script>
-
   // Set the configuration for your app
   // TODO: Replace with your project's config object
    // Initialize Firebase
-  /*var config = {
-    apiKey: "AIzaSyB_Rcg-PBIz4HazlNEWiBQiW4K7BV4mDPM",
-    authDomain: "quickdemo-b4cc9.firebaseapp.com",
-    databaseURL: "https://quickdemo-b4cc9.firebaseio.com",
-    storageBucket: "quickdemo-b4cc9.appspot.com",
-  };*/
-  
   var config = {
     apiKey: "AIzaSyCM4XZnac2L8m-26Olc9tI7_FD11zobHSY",
     authDomain: "qsurvey-1dacd.firebaseapp.com",
@@ -29,18 +21,14 @@
     messagingSenderId: "130814273722"
   };
 
-
-  firebase.initializeApp(config);
-
+firebase.initializeApp(config);
 // Get a reference to the database service
   var database = firebase.database();
-
   var app = angular.module("quick_demo", []);
   var  messageURI = null;
   var messageRef = null;
 
 app.controller("channelCtrl", function($scope, $rootScope) {
-
 
   $scope.channels = [];
   $scope.channel_keys = [];
@@ -61,62 +49,95 @@ app.controller("channelCtrl", function($scope, $rootScope) {
         } else {
             $scope.errortext = "The channel is already in the list.";
         }
-
     }
 
     $scope.createAChannel = function(channelName) {
       var newKey = database.ref('channels').push().key;
       database.ref('channels/' + newKey).set({channel:channelName});
     return newKey;
+  }
 
+  $scope.selectLiIndex = function(index) {
+      $scope.selectedRow = index;
   }
 
   $scope.selectChannel = function(x) {
           $rootScope.selected_channel = x;
           var index = $scope.channels.indexOf(x);
           $scope.selected_channel_key = $scope.channel_keys[index];
-
           messageURI = "channels/" + $scope.selected_channel_key + "/messages";
           messageRef = database.ref(messageURI);
           //Show clicked item on "Publish message on" 
           $rootScope.messageArray = [];
           $rootScope.message_keys = [];
 
-      messageRef.orderByChild("message").on("child_added", function(snapshot) {
-        console.log("The " + snapshot.key + " publishMessage is " + snapshot.val().message);
-        $rootScope.messageArray.push(snapshot.val().message);
-      $rootScope.message_keys.push(snapshot.key);
-      });
+          messageRef.orderByChild("message").on("child_added", function(snapshot) {
+            var msgObj = snapshot.val().message;
+            msgObj.message_uri = messageURI + "/" + snapshot.key + '/message';
+            console.log("The " + snapshot.key + " publishMessage is " + msgObj);
+            $rootScope.messageArray.push(msgObj);
+            $rootScope.message_keys.push(snapshot.key);
+          });
 
-         $scope.selectedRow = index; // This is for changing color on select a channel
-
+          messageRef.orderByChild("message").on("child_changed", function(childSnapshot, prevChildKey) {
+            var index = $rootScope.message_keys.indexOf(childSnapshot.key);
+            var changedObj = childSnapshot.val().message;
+            var oldObj = $rootScope.messageArray[index];
+            changedObj.message_uri = oldObj.message_uri;
+            $rootScope.messageArray[index] = changedObj;
+            $rootScope.$apply("messageArray");
+          });
     }
-
    
       $scope.removeChannel = function (x) {
         $scope.errortext = "";
-
-       // $scope.channels.splice(x,1);
-
         var index = $scope.channels.indexOf(x)
         var removeKey = $scope.channel_keys[index];
         database.ref('channels/' + removeKey).set(null);
-        $scope.channels[index] = "";        
-
+        $scope.channels.splice(index, 1);
       }
 
   });
 
+app.controller("messageCtrl", function($scope, $rootScope, $http) {
 
+      $scope.publishMessage = function(msg) {
 
-app.controller("messageCtrl", function($scope, $rootScope) {
+        if(!$rootScope.selected_channel)
+        {
+          alert('Please select a channel');
+          return;
+        }
 
-      $scope.publishMessage = function() {
         $scope.errortext = "";
-        if (!$scope.msg) {return;}
-        $scope.addMessageDetails($scope.msg);
+        if (!msg) {return;}
+        var msgKey = $scope.addMessageDetails(msg);
+        $scope.msg.message_uri = messageURI + "/" + msgKey + '/message';
+        $scope.httpPostData($rootScope.selected_channel, msg);
       }
 
+      $scope.httpPostData = function(topicName, msgData)
+      {
+
+        var gcmDataPkt = {
+          to: '/topics/' + topicName,
+          data:msgData
+        };
+
+        $http({
+        method : "POST",
+        data: gcmDataPkt,
+        headers: {
+           'Content-Type' : 'application/json',
+           'Authorization' : 'key=AIzaSyDhsWbiJ3RaSq5vnjwI7TahoRMD-jFDOFI'
+         },
+        url : "https://android.googleapis.com/gcm/send",
+          }).then(function mySucces(response) {
+              alert("Message published to Server");
+          }, function myError(response) {
+              alert("Could not publish message !\n" + response);
+          });
+      }
 
       $scope.addMessageDetails = function(msgf) {
         if(msgf.survey === true)
@@ -128,42 +149,33 @@ app.controller("messageCtrl", function($scope, $rootScope) {
         {
             msgf.survey = false;
         }
-
-       var newMsgKey = messageRef.push().key;
-      database.ref( messageURI + '/' + newMsgKey).set({message:msgf});
-      return newMsgKey;
+        var newMsgKey = messageRef.push().key;
+        database.ref( messageURI + '/' + newMsgKey).set({message:msgf});
+        return newMsgKey;
       }
 
-
-      $scope.addYesCount = function(y){
+      /*$scope.addYesCount = function(y){
             var index = $scope.messageArray.indexOf(y);
-            yCnt = $scope.messageArray[index].yesCount;
-            yCnt = yCnt + 1;
-           
+            y.yCnt = $scope.messageArray[index].yesCount;
+            y.yCnt = y.yCnt + 1;
+           // alert(y.yesCnt);
             var messageKeyIndex = $scope.message_keys[index];
-            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({yesCount:yCnt});
-
-            
+            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({yesCount:y.yCnt});
           }
-
        $scope.addNoCount = function(n){
             var index = $scope.messageArray.indexOf(n);
-            nCnt = $scope.messageArray[index].noCount;
-            nCnt = nCnt + 1;
-            
+            n.nCnt = $scope.messageArray[index].noCount;
+            n.nCnt = n.nCnt + 1;
             var messageKeyIndex = $scope.message_keys[index];
-            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({noCount:nCnt});
-          }
-
+            database.ref( messageURI + '/' + messageKeyIndex + '/message').update({noCount:n.nCnt});
+          }*/
   });
-
 </script>
 
 <style type="text/css">
 .selected {
   background-color: #ABEBC6; 
 }
-
 </style>
 
 <div ng-app="quick_demo" ng-cloak class="">
@@ -186,8 +198,8 @@ app.controller("messageCtrl", function($scope, $rootScope) {
             <p class="w3-padding-left w3-text-red">{{errortext}}</p>
           </div>
 
-          <ul class="w3-ul" >
-          <li ng-repeat="x in channels" ng-click="selectChannel(x)" style="cursor:pointer;" class="w3-padding-16" ng-class="{'selected': $index == selectedRow }">{{x}}<span ng-click="removeChannel(x)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
+          <ul class="w3-ul">
+          <li ng-repeat="x in channels | filter:addMe" ng-click="selectChannel(x);selectLiIndex($index);" style="cursor:pointer;" class="w3-padding-16" ng-class="{'selected': $index == selectedRow }">{{x}}<span ng-click="removeChannel(x)" style="cursor:pointer;" class="w3-right w3-margin-right">X</span></li>
           </ul>
 
         </div>
@@ -197,7 +209,7 @@ app.controller("messageCtrl", function($scope, $rootScope) {
           <div class="w3-card-2">
 
             <header class="w3-container w3-light-grey w3-padding-16">
-              <h3>Publish message on {{selected_channel}}</h3>
+              <h3>Publish message on '{{selected_channel}}' channel</h3>
             </header>
 
               <form class="w3-container">
@@ -215,43 +227,77 @@ app.controller("messageCtrl", function($scope, $rootScope) {
                       <label class="w3-validate">It is a survey</label>
                     </div>
                     <div class="w3-col s2">
-                      <button ng-click="publishMessage()" class="w3-btn w3-green">PUBLISH</button>
+                      <button ng-click="publishMessage(msg)" class="w3-btn w3-green">PUBLISH</button>
                     </div>
                   </div>
                 </div>
 
           </div>
         </div>
-
+        <div class="w3-row w3-grey w3-margin-top w3-margin-bottom">
+        <div class="w3-col s5">
+              <span class="w3-tag w3-round s6 w3-brown w3-border w3-border-white" ng-init="fileterBySurvey = undefined;" ng-click="fileterBySurvey = undefined"><i class="fa fa-filter" aria-hidden="true"></i>
+                      Filter messages
+              </span>
+          </div>
+          <div class="w3-col s3">
+            <span class="w3-tag w3-round w3-green w3-border w3-border-white w3-right" ng-click="fileterBySurvey = true">
+            <i class="fa fa-filter" aria-hidden="true"></i>
+                      Survey
+            </span>
+          </div>
+          <div class="w3-col s4">
+              <span class="w3-tag w3-round s6 w3-yellow w3-border w3-border-white w3-left" ng-click="fileterBySurvey = false">
+                <i class="fa fa-filter" aria-hidden="true"></i>
+                      Normal
+              </span>
+          </div>
+        </div>
         <div class="w3-row">
           <div class="w3-card-2">
+            <div ng-repeat="m in messageArray.slice().reverse() | filter:{survey : fileterBySurvey}" class="w3-padding-4">
+                <div ng-if="m.survey==true" class="w3-card-4 w3-leftbar w3-border-green">
+                    <header class="w3-container w3-pale-green">
+                      <h4>{{m.title}}</h4>
+                    </header>
 
-            <div ng-repeat="m in messageArray.slice().reverse()">
-                
-
-                     <div ng-if="m.survey==true" class="w3-panel w3-pale-yellow w3-leftbar w3-border-yellow" >
-
-                            <h4>Survey of {{selected_channel}} on {{m.title}}</h4>
-                            <p> {{m.body}} </p>
-
-                           <div class="w3-row">
-                                <div class="w3-col s5">
-                                  <h1>Yes&nbsp;<span class="w3-tag w3-btn w3-green" ng-click="addYesCount(m)" >{{m.yesCount}}</span></h1>
-                                </div>
-                                <div class="w3-col s5">
-                                  <h1>No&nbsp;<span class="w3-tag w3-btn w3-red" ng-click="addNoCount(m)" >{{m.noCount}}</span></h1>
-                                </div>
-                           </div>
-                     </div>
-                  
-                
-
-                <div  ng-if="m.survey==false" class="w3-panel w3-pale-green w3-leftbar w3-border-green">
-                  <h4>Information of {{selected_channel}} on {{m.title}} </h4>
-                  <p>  {{m.body}}  </p>
-
+                    <div class="w3-container">
+                      <p>{{m.body}}</p>
+                    </div>
+                    <footer class="w3-container">
+                      <div class="w3-row">
+                        <div class="w3-col s8 w3-left">
+                        <div class="w3-tag w3-round w3-brown" style="padding:3px">
+                        <div class="w3-tag w3-round w3-brown w3-border w3-border-white w3-btn w3-tiny" ng-click="httpPostData(selected_channel, m);">
+                          Publish again
+                        </div>
+                      </div>
+                        </div>
+                        <div class="w3-col s2">
+                          Yes&nbsp;<span class="w3-tag w3-btn w3-green">{{m.yesCount}}
+                        </div>
+                        <div class="w3-col s2">
+                          No&nbsp;<span class="w3-tag w3-btn w3-red">{{m.noCount}}
+                        </div>
+                      </div>
+                    </footer>
                 </div>
+                <div ng-if="m.survey==false" class="w3-card-4 w3-leftbar w3-border-yellow">
+                    <header class="w3-container w3-pale-yellow">
+                      <h4>{{m.title}}</h4>
+                    </header>
 
+                    <div class="w3-container">
+                      <p>{{m.body}}</p>
+                    </div>
+                    <footer class="w3-container">
+                      <div class="w3-tag w3-round w3-brown" style="padding:3px">
+                        <div class="w3-tag w3-round w3-brown w3-border w3-border-white w3-btn w3-tiny" ng-click="httpPostData(selected_channel, m);">
+                          Publish again
+                        </div>
+                      </div>
+                    </footer>
+                </div>
 
             </div>
 
